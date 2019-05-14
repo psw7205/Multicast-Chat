@@ -6,7 +6,7 @@
 #include "HomeWork2.h"
 #include "HomeWork2Dlg.h"
 #include "afxdialogex.h"
-#include "MulticastChat.h"
+#include "MulticastChatDlg.h"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -59,16 +59,16 @@ CHomeWork2Dlg::CHomeWork2Dlg(CWnd* pParent /*=nullptr*/)
 void CHomeWork2Dlg::DoDataExchange(CDataExchange* pDX)
 {
 	CDialogEx::DoDataExchange(pDX);
-	DDX_Control(pDX, IDC_EDIT1, m_portControl);
-	DDX_Control(pDX, IDC_EDIT3, m_nameContorl);
-	DDX_Control(pDX, IDC_EDIT2, m_ipAddrControl);
+	DDX_Control(pDX, IDC_EDIT_PORT, m_portControl);
+	DDX_Control(pDX, IDC_EDIT_NAME, m_nameContorl);
+	DDX_Control(pDX, IDC_EDIT_IP, m_ipAddrControl);
 }
 
 BEGIN_MESSAGE_MAP(CHomeWork2Dlg, CDialogEx)
 	ON_WM_SYSCOMMAND()
 	ON_WM_PAINT()
 	ON_WM_QUERYDRAGICON()
-	ON_EN_UPDATE(IDC_EDIT1, &CHomeWork2Dlg::OnEnUpdateEdit1)
+	ON_EN_UPDATE(IDC_EDIT_PORT, &CHomeWork2Dlg::OnEnUpdateEdit1)
 	ON_BN_CLICKED(IDOK, &CHomeWork2Dlg::OnBnClickedOk)
 END_MESSAGE_MAP()
 
@@ -182,7 +182,11 @@ void CHomeWork2Dlg::OnBnClickedOk()
 	else
 	{
 		CDialogEx::OnOK();
-		MulticastChat chat;
+		MulticastChatDlg chat;
+		chat.user.port = m_port;
+		memcpy(chat.user.ipAddr, m_IpAddr, sizeof(m_IpAddr));
+		m_nameContorl.GetWindowText(chat.user.name);
+		m_ipAddrControl.GetWindowText(chat.user.ip);
 		chat.DoModal();
 	}
 }
@@ -190,14 +194,14 @@ void CHomeWork2Dlg::OnBnClickedOk()
 // port에 입력 될 때마다 검사
 void CHomeWork2Dlg::OnEnUpdateEdit1()
 {
-	CString portStr;
-	m_portControl.GetWindowText(portStr);
-	int len = portStr.GetLength();
+	CString str;
+	m_portControl.GetWindowText(str);
+	int len = str.GetLength();
 
 	// 모든 문자열에서 숫자가 아닌 문자가 나오면 return
 	for (int i = 0; i < len; ++i)
 	{
-		if (!(portStr.GetAt(i) >= '0' && portStr.GetAt(i) <= '9'))
+		if (!(str.GetAt(i) >= '0' && str.GetAt(i) <= '9'))
 		{
 			MessageBox("숫자가 아닙니다!", "ERROR");
 			m_portControl.SetSel(len - 1, len);
@@ -207,7 +211,7 @@ void CHomeWork2Dlg::OnEnUpdateEdit1()
 	}
 
 	// 입력된 값이 범위에 벗어나지 않으면 m_port에 저장
-	int tmp = atoi(portStr);
+	int tmp = atoi(str);
 	if (tmp > USHORT_MAX)
 	{
 		MessageBox("범위를 벗어났습니다!\n(0~65535)", "ERROR");
