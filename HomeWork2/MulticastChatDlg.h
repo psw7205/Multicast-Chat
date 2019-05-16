@@ -9,6 +9,8 @@ struct info {
 
 // MulticastChat 대화 상자
 
+#define BUFSIZE     1024
+
 class MulticastChatDlg : public CDialogEx
 {
 	DECLARE_DYNAMIC(MulticastChatDlg)
@@ -31,15 +33,30 @@ public:
 	afx_msg int OnCreate(LPCREATESTRUCT lpCreateStruct);
 	afx_msg void OnBnClickedOk();
 	afx_msg void OnBnClickedCancel();
-	afx_msg void AddEventString(const CString str);
+	afx_msg void AddEventString(CString str);
+	afx_msg void OnBnClickedButtonRename();
 
+	virtual BOOL OnInitDialog();
 	info user;
+	CStringList userList;
+	CListBox m_chatList;
 	CString m_ip;
 	int m_port;
-	afx_msg void OnBnClickedButtonRename();
 	CEdit m_renameContorl;
 	CEdit m_name;
-	virtual BOOL OnInitDialog();
-	CListBox m_chatList;
+	CEdit m_message;
+	CTime cTime;
 
+
+
+	WSADATA wsa;
+	SOCKET sock;
+	int retval;
+	char sendbuf[BUFSIZE + 1];
+	int len;
+	HANDLE hThread;
+	SOCKADDR_IN remoteaddr;
+
+
+	bool flag;
 };

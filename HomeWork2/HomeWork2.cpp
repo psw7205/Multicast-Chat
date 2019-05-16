@@ -31,7 +31,6 @@ CHomeWork2App::CHomeWork2App()
 
 CHomeWork2App theApp;
 
-
 // CHomeWork2App 초기화
 
 BOOL CHomeWork2App::InitInstance()

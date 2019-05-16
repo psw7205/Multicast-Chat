@@ -181,7 +181,6 @@
   <ItemGroup>
     <ClInclude Include="HomeWork2.h" />
     <ClInclude Include="HomeWork2Dlg.h" />
-    <ClInclude Include="Multicast.h" />
     <ClInclude Include="MulticastChatDlg.h" />
     <ClInclude Include="Resource.h" />
     <ClInclude Include="stdafx.h" />
@@ -191,7 +190,6 @@
     <ClCompile Include="HomeWork2.cpp" />
     <ClCompile Include="HomeWork2Dlg.cpp" />
     <ClCompile Include="MulticastChatDlg.cpp" />
-    <ClCompile Include="Muticast.cpp" />
     <ClCompile Include="stdafx.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>

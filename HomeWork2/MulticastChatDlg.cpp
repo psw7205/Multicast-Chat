@@ -7,6 +7,86 @@
 
 IMPLEMENT_DYNAMIC(MulticastChatDlg, CDialogEx)
 
+DWORD WINAPI Receiver(LPVOID arg)
+{
+	int retval;
+
+	MulticastChatDlg *pDlg = (MulticastChatDlg*)arg;
+
+	// 윈속 초기화
+	WSADATA wsa;
+	if (WSAStartup(MAKEWORD(2, 2), &wsa) != 0)
+		return 1;
+
+	// socket()
+	SOCKET sock = socket(AF_INET, SOCK_DGRAM, 0);
+	if (sock == INVALID_SOCKET) AfxMessageBox("socket() Error");
+
+	// SO_REUSEADDR 옵션 설정
+	BOOL optval = TRUE;
+	retval = setsockopt(sock, SOL_SOCKET,
+		SO_REUSEADDR, (char*)& optval, sizeof(optval));
+	if (retval == SOCKET_ERROR) AfxMessageBox("setsockopt() Error");
+
+	// bind()
+	SOCKADDR_IN localaddr;
+	ZeroMemory(&localaddr, sizeof(localaddr));
+	localaddr.sin_family = AF_INET;
+	localaddr.sin_addr.s_addr = htonl(INADDR_ANY);
+	localaddr.sin_port = htons(pDlg->user.port);
+	retval = bind(sock, (SOCKADDR*)& localaddr, sizeof(localaddr));
+	if (retval == SOCKET_ERROR) AfxMessageBox("bind() Error");
+
+	// 멀티캐스트 그룹 가입
+	struct ip_mreq mreq;
+	mreq.imr_multiaddr.s_addr = inet_addr(pDlg->user.ip);
+	mreq.imr_interface.s_addr = htonl(INADDR_ANY);
+	retval = setsockopt(sock, IPPROTO_IP, IP_ADD_MEMBERSHIP,
+		(char*)& mreq, sizeof(mreq));
+	if (retval == SOCKET_ERROR) AfxMessageBox("setsockopt() Error");
+
+	// 데이터 통신에 사용할 변수
+	SOCKADDR_IN peeraddr;
+	int addrlen;
+	char buf[BUFSIZE + 1];
+	char name[10];
+	// 멀티캐스트 데이터 받기
+	while (1) {
+		// 데이터 받기
+		addrlen = sizeof(peeraddr);
+
+		retval = recvfrom(sock, name, 10, 0,
+			(SOCKADDR*)& peeraddr, &addrlen);
+		if (retval == SOCKET_ERROR) {
+			AfxMessageBox("recvfrom() Error");
+			continue;
+		}
+		name[retval] = '\0';
+		retval = recvfrom(sock, buf, BUFSIZE, 0,
+			(SOCKADDR*)& peeraddr, &addrlen);
+		if (retval == SOCKET_ERROR) {
+			AfxMessageBox("recvfrom() Error");
+			continue;
+		}
+
+		// 받은 데이터 출력
+		buf[retval] = '\0';
+		pDlg->AddEventString(buf);
+	}
+
+	// 멀티캐스트 그룹 탈퇴
+	retval = setsockopt(sock, IPPROTO_IP, IP_DROP_MEMBERSHIP,
+		(char*)& mreq, sizeof(mreq));
+	if (retval == SOCKET_ERROR) AfxMessageBox("setsockopt() Error");
+
+	// closesocket()
+	closesocket(sock);
+
+	// 윈속 종료
+	WSACleanup();
+	return 0;
+}
+
 MulticastChatDlg::MulticastChatDlg(CWnd* pParent /*=nullptr*/)
 	: CDialogEx(IDD_DIALOG_CHAT, pParent)
 {
@@ -25,6 +105,7 @@ void MulticastChatDlg::DoDataExchange(CDataExchange* pDX)
 	DDX_Control(pDX, IDC_EDIT_RENAME, m_renameContorl);
 	DDX_Control(pDX, IDC_NAME, m_name);
 	DDX_Control(pDX, IDC_LIST_CHAT, m_chatList);
+	DDX_Control(pDX, IDC_EDIT_MSG, m_message);
 }
 
 
@@ -37,7 +118,29 @@ END_MESSAGE_MAP()
 
 void MulticastChatDlg::OnBnClickedOk()
 {
-	
+	CString tmp;
+	CString str = user.name;
+	m_message.GetWindowText(tmp);
+
+	if (tmp != "")
+	{
+		str.Append(" >> " + tmp);
+		AddEventString(str);
+		m_message.SetWindowText("");
+
+		// 데이터 보내기
+		retval = sendto(sock, user.name, user.name.GetLength(), 0,
+			(SOCKADDR*)& remoteaddr, sizeof(remoteaddr));
+		if (retval == SOCKET_ERROR) {
+			AfxMessageBox("sendto() Error");
+		}
+
+		retval = sendto(sock, str, str.GetLength(), 0,
+			(SOCKADDR*)& remoteaddr, sizeof(remoteaddr));
+		if (retval == SOCKET_ERROR) {
+			AfxMessageBox("sendto() Error");
+		}
+	}
 }
 
 
@@ -61,13 +164,25 @@ int MulticastChatDlg::OnCreate(LPCREATESTRUCT lpCreateStruct)
 
 void MulticastChatDlg::OnBnClickedButtonRename()
 {
-	CString str;
-	m_renameContorl.GetWindowText(str);
+	CString reName;
+	m_renameContorl.GetWindowText(reName);
 
-	if (!str.IsEmpty())
+	if (!reName.IsEmpty() && reName.Compare(user.name))
 	{
-		m_name.SetWindowText(str);
+		CString str = "닉네임 변경 : ";
+		str += user.name + " -> " + reName;
+		
+		user.name = reName;
+		m_name.SetWindowText(reName);
 		m_renameContorl.SetWindowText("");
+	
+		CString time;
+		cTime = CTime::GetCurrentTime();
+		time.Format("%02d:%02d:%02d", cTime.GetHour(), cTime.GetMinute(), cTime.GetSecond());
+		
+		str = str + " (" + time + ")";
+
+		AddEventString(str);
 	}
 }
 
@@ -75,14 +190,43 @@ void MulticastChatDlg::OnBnClickedButtonRename()
 BOOL MulticastChatDlg::OnInitDialog()
 {
 	CDialogEx::OnInitDialog();
-	
 	m_name.SetWindowText(user.name);
+	userList.AddTail(user.name);
+	
+	// 윈속 초기화
+	if (WSAStartup(MAKEWORD(2, 2), &wsa) != 0)
+		return 1;
+
+	// socket()
+	sock = socket(AF_INET, SOCK_DGRAM, 0);
+	if (sock == INVALID_SOCKET) MessageBox("socket() Error");
+
+	// 멀티캐스트 TTL 설정
+	int ttl = 2;
+	retval = setsockopt(sock, IPPROTO_IP, IP_MULTICAST_TTL,
+		(char*)& ttl, sizeof(ttl));
+	if (retval == SOCKET_ERROR) MessageBox("setsockopt() Error");
+
+	// 소켓 주소 구조체 초기화
+	ZeroMemory(&remoteaddr, sizeof(remoteaddr));
+	remoteaddr.sin_family = AF_INET;
+	remoteaddr.sin_addr.s_addr = inet_addr(user.ip);
+	remoteaddr.sin_port = htons(user.port);
+
+	//리시버 스레드 생성
+	hThread = CreateThread(NULL, 0, Receiver,(LPVOID)this, 0, NULL);
+	if (hThread == NULL)
+		closesocket(sock);
+	else
+		CloseHandle(hThread);
 
 	return TRUE; 
 }
 
-void MulticastChatDlg::AddEventString(const CString str)
+
+void MulticastChatDlg::AddEventString(CString str)
 {
 	int idx = m_chatList.InsertString(-1, str);
 	m_chatList.SetCurSel(idx);
 }
+
