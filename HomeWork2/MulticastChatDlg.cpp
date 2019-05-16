@@ -49,19 +49,36 @@ DWORD WINAPI Receiver(LPVOID arg)
 	SOCKADDR_IN peeraddr;
 	int addrlen;
 	char buf[BUFSIZE + 1];
-	char name[10];
+	char name[BUFSIZE];
+
 	// 멀티캐스트 데이터 받기
 	while (1) {
 		// 데이터 받기
 		addrlen = sizeof(peeraddr);
 
-		retval = recvfrom(sock, name, 10, 0,
+		retval = recvfrom(sock, name, BUFSIZE, 0,
 			(SOCKADDR*)& peeraddr, &addrlen);
 		if (retval == SOCKET_ERROR) {
 			AfxMessageBox("recvfrom() Error");
 			continue;
 		}
-		name[retval] = '\0';
+
+		char *enter = strchr(name, '\n');
+		
+		if (enter != NULL)
+		{
+			int idx = enter - name;
+			name[idx] = '\0';
+		}
+		else
+		{
+			name[retval] = '\0';
+		}
+
+		CString str = name;
+
+		str.Append(" : ");
+
 		retval = recvfrom(sock, buf, BUFSIZE, 0,
 			(SOCKADDR*)& peeraddr, &addrlen);
 		if (retval == SOCKET_ERROR) {
@@ -71,7 +88,8 @@ DWORD WINAPI Receiver(LPVOID arg)
 
 		// 받은 데이터 출력
 		buf[retval] = '\0';
-		pDlg->AddEventString(buf);
+		str.Append(buf);
+		pDlg->AddEventString(str);
 	}
 
 	// 멀티캐스트 그룹 탈퇴
@@ -118,23 +136,21 @@ END_MESSAGE_MAP()
 
 void MulticastChatDlg::OnBnClickedOk()
 {
-	CString tmp;
-	CString str = user.name;
-	m_message.GetWindowText(tmp);
+	CString str;
+	m_message.GetWindowText(str);
 
-	if (tmp != "")
+	if (str != "")
 	{
-		str.Append(" >> " + tmp);
-		AddEventString(str);
 		m_message.SetWindowText("");
 
-		// 데이터 보내기
+		// 데이터 보내기 (이름) 
 		retval = sendto(sock, user.name, user.name.GetLength(), 0,
 			(SOCKADDR*)& remoteaddr, sizeof(remoteaddr));
 		if (retval == SOCKET_ERROR) {
 			AfxMessageBox("sendto() Error");
 		}
 
+		// 데이터 보내기 (내용)
 		retval = sendto(sock, str, str.GetLength(), 0,
 			(SOCKADDR*)& remoteaddr, sizeof(remoteaddr));
 		if (retval == SOCKET_ERROR) {
