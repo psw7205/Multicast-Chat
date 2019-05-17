@@ -38,7 +38,6 @@ public:
 
 	virtual BOOL OnInitDialog();
 	info user;
-	CStringList userList;
 	CListBox m_chatList;
 	CString m_ip;
 	int m_port;
@@ -46,8 +45,6 @@ public:
 	CEdit m_name;
 	CEdit m_message;
 	CTime cTime;
-
-
 
 	WSADATA wsa;
 	SOCKET sock;
@@ -57,6 +54,10 @@ public:
 	HANDLE hThread;
 	SOCKADDR_IN remoteaddr;
 
+	char m_MyHostName[256];
+	CString m_MyHostIP;
+	CString ID;
 
-	bool flag;
+	void MySendTo(CString str);
+	static DWORD WINAPI Receiver(LPVOID arg);
 };
