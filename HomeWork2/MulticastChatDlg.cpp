@@ -74,7 +74,7 @@ DWORD WINAPI MulticastChatDlg::Receiver(LPVOID arg)
 			CString recivedName = recivedStr.Left(len);
 			if (!recivedName.Compare(pDlg->user.name) && recivedID.Compare(pDlg->ID) > 0 )
 			{
-				CString errMsg = recivedID + "##아이디 중복 아이디를 변경하세요##";
+				CString errMsg = recivedID + " ##아이디 중복 아이디를 변경하세요##";
 				pDlg->MySendTo(errMsg);
 			}
 		}
@@ -167,11 +167,11 @@ void MulticastChatDlg::OnBnClickedButtonRename()
 		CString str = user.name + "에서 " + reName + "으로 아이디 변경";
 		ID.Format("[%lld]", CTime::GetCurrentTime().GetTime());
 
-		user.name = reName;
 		m_name.SetWindowText(reName);
 		m_renameContorl.SetWindowText("");
 
 		MySendTo(str);
+		user.name = reName;
 	}
 }
 
