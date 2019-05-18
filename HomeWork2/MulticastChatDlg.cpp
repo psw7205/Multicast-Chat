@@ -237,7 +237,7 @@ void MulticastChatDlg::MySendTo(CString str)
 	cTime = CTime::GetCurrentTime();
 	time.Format("%02dh:%02dm:%02ds", cTime.GetHour(), cTime.GetMinute(), cTime.GetSecond());
 
-	str = user.name + " : " + str + "\t\t (" + time + "||" + m_MyHostIP + ")" + ID;
+	str = user.name + " : " + str + " (" + time + "||" + m_MyHostIP + ")" + ID;
 
 	retval = sendto(sock, str, str.GetLength(), 0,
 		(SOCKADDR*)& remoteaddr, sizeof(remoteaddr));
