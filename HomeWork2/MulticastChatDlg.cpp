@@ -104,6 +104,10 @@ MulticastChatDlg::MulticastChatDlg(CWnd* pParent /*=nullptr*/)
 
 MulticastChatDlg::~MulticastChatDlg()
 {
+	MySendTo("##############퇴장##############");
+
+	closesocket(sock);
+	WSACleanup();
 }
 
 void MulticastChatDlg::DoDataExchange(CDataExchange* pDX)

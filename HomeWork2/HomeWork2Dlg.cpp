@@ -203,7 +203,7 @@ void CHomeWork2Dlg::OnEnUpdateEdit1()
 	{
 		if (!(str.GetAt(i) >= '0' && str.GetAt(i) <= '9'))
 		{
-			MessageBox("숫자가 아닙니다!", "ERROR");
+			MessageBox("포트번호에 숫자만 입력하세요!", "ERROR");
 			m_portControl.SetSel(len - 1, len);
 			m_portControl.Cut();
 			return;
