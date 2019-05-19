@@ -67,12 +67,12 @@ DWORD WINAPI MulticastChatDlg::Receiver(LPVOID arg)
 		rbuf[rretval] = '\0';
 		CString recivedStr = rbuf;
 		CString recivedID = recivedStr.Right(12);
-		
+
 		if (recivedID.Compare(pDlg->ID))
 		{
 			int len = recivedStr.Find(':') - 1;
 			CString recivedName = recivedStr.Left(len);
-			if (!recivedName.Compare(pDlg->user.name) && recivedID.Compare(pDlg->ID) > 0 )
+			if (!recivedName.Compare(pDlg->user.name) && recivedID.Compare(pDlg->ID) > 0)
 			{
 				CString errMsg = recivedID + "##아이디 중복 아이디를 변경하세요##";
 				pDlg->MySendTo(errMsg);

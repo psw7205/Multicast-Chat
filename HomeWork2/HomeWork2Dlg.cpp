@@ -14,7 +14,6 @@
 
 
 // 응용 프로그램 정보에 사용되는 CAboutDlg 대화 상자입니다.
-
 class CAboutDlg : public CDialogEx
 {
 public:
@@ -47,8 +46,6 @@ END_MESSAGE_MAP()
 
 
 // CHomeWork2Dlg 대화 상자
-
-
 
 CHomeWork2Dlg::CHomeWork2Dlg(CWnd* pParent /*=nullptr*/)
 	: CDialogEx(IDD_HOMEWORK2_DIALOG, pParent)
@@ -105,12 +102,8 @@ BOOL CHomeWork2Dlg::OnInitDialog()
 	SetIcon(m_hIcon, FALSE);		// 작은 아이콘을 설정합니다.
 
 	// TODO: 여기에 추가 초기화 작업을 추가합니다.
-	m_port = 9000;
-	m_portControl.SetSel(0, -1);
-	m_portControl.SetWindowText("9000");
-	m_ipAddrControl.SetSel(0, -1);
-	m_ipAddrControl.SetWindowText("235.7.8.1");
-	
+	m_port = -1;
+
 	m_nameContorl.SetLimitText(20);
 
 	return TRUE;  // 포커스를 컨트롤에 설정하지 않으면 TRUE를 반환합니다.
@@ -165,19 +158,21 @@ HCURSOR CHomeWork2Dlg::OnQueryDragIcon()
 	return static_cast<HCURSOR>(m_hIcon);
 }
 
-
-
 void CHomeWork2Dlg::OnBnClickedOk()
 {
-	if (!checkAddr())
+	if (!CheckAddr())
 	{
 		MessageBox("IP Address를 다시 입력하세요!", "ERROR");
 		m_ipAddrControl.SetSel(0, -1);
-		m_ipAddrControl.SetWindowText("235.7.8.1");
+		m_ipAddrControl.SetWindowText("");
 	}
-	else if (!checkName())
+	else if (!CheckName())
 	{
 		MessageBox("닉네임을 입력하세요", "ERROR");
+	}
+	else if (m_port == -1)
+	{
+		MessageBox("포트번호를 입력하세요", "ERROR");
 	}
 	else
 	{
@@ -197,6 +192,11 @@ void CHomeWork2Dlg::OnEnUpdateEdit1()
 	CString str;
 	m_portControl.GetWindowText(str);
 	int len = str.GetLength();
+	if (len == 0)
+	{
+		m_port = -1;
+		return;
+	}
 
 	// 모든 문자열에서 숫자가 아닌 문자가 나오면 return
 	for (int i = 0; i < len; ++i)
@@ -204,7 +204,7 @@ void CHomeWork2Dlg::OnEnUpdateEdit1()
 		if (!(str.GetAt(i) >= '0' && str.GetAt(i) <= '9'))
 		{
 			MessageBox("포트번호에 숫자만 입력하세요!", "ERROR");
-			m_portControl.SetSel(len - 1, len);
+			m_portControl.SetSel(0, -1);
 			m_portControl.Cut();
 			return;
 		}
@@ -224,7 +224,7 @@ void CHomeWork2Dlg::OnEnUpdateEdit1()
 	}
 }
 
-bool CHomeWork2Dlg::checkAddr()
+bool CHomeWork2Dlg::CheckAddr()
 {
 	CString str;
 	m_ipAddrControl.GetWindowText(str);
@@ -272,7 +272,8 @@ bool CHomeWork2Dlg::checkAddr()
 	return true;
 }
 
-bool CHomeWork2Dlg::checkName()
+// 닉네임이 빈칸이면 false
+bool CHomeWork2Dlg::CheckName()
 {
 	CString str;
 	m_nameContorl.GetWindowText(str);
