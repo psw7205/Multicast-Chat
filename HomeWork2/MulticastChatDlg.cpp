@@ -1,4 +1,8 @@
-﻿// MulticastChatDlg.cpp: 구현 파일
+﻿// 2019년 1학기 네트워크프로그래밍 숙제 2번
+// 성명: 박상우 학번: 16013093
+// 플랫폼: VS2017
+
+// MulticastChatDlg.cpp: 구현 파일
 
 #include "stdafx.h"
 #include "HomeWork2.h"
@@ -7,6 +11,7 @@
 
 IMPLEMENT_DYNAMIC(MulticastChatDlg, CDialogEx)
 
+// 메세지 수신 함수(쓰레드에서 실행)
 DWORD WINAPI MulticastChatDlg::Receiver(LPVOID arg)
 {
 	int rretval;
@@ -68,10 +73,14 @@ DWORD WINAPI MulticastChatDlg::Receiver(LPVOID arg)
 		CString recivedStr = rbuf;
 		CString recivedID = recivedStr.Right(12);
 
+		// 수신한 ID와 자신의 ID를 비교해서 다른 경우만 중복검사 실행
 		if (recivedID.Compare(pDlg->ID))
 		{
+			// 문자열에서 닉네임을 찾아 비교
 			int len = recivedStr.Find(':') - 1;
 			CString recivedName = recivedStr.Left(len);
+
+			// ID를 시간으로 설정하기 때문에 비교가능, 시간이 늦으면 늦게 생성한 닉네임
 			if (!recivedName.Compare(pDlg->user.name) && recivedID.Compare(pDlg->ID) > 0)
 			{
 				CString errMsg = recivedID + "##아이디 중복 아이디를 변경하세요##";
@@ -104,6 +113,7 @@ MulticastChatDlg::MulticastChatDlg(CWnd* pParent /*=nullptr*/)
 
 MulticastChatDlg::~MulticastChatDlg()
 {
+	//프로그램 종료시 퇴장메세지를 보내고 소켓닫기
 	MySendTo("##############퇴장##############");
 
 	closesocket(sock);
@@ -134,6 +144,7 @@ void MulticastChatDlg::OnBnClickedOk()
 	CString str;
 	m_message.GetWindowText(str);
 
+	// 빈메세지가 아닌 경우
 	if (str != "")
 	{
 		m_message.SetWindowText("");
@@ -166,8 +177,10 @@ void MulticastChatDlg::OnBnClickedButtonRename()
 	CString reName;
 	m_renameContorl.GetWindowText(reName);
 
+	// 공백이 아니고 현재 닉네임과 다른 경우
 	if (!reName.IsEmpty() && reName.Compare(user.name))
 	{
+		// ID도 같이 변경해 메세지 보내기
 		CString str = user.name + "에서 " + reName + "으로 아이디 변경";
 		ID.Format("[%lld]", CTime::GetCurrentTime().GetTime());
 
@@ -213,7 +226,7 @@ BOOL MulticastChatDlg::OnInitDialog()
 	else
 		CloseHandle(hThread);
 
-	//https://docs.microsoft.com/en-us/windows/desktop/api/winsock/nf-winsock-gethostname
+	//현재 호스트 IP 저장
 	gethostname(m_MyHostName, sizeof(m_MyHostName));
 	HOSTENT *ptr = gethostbyname(m_MyHostName);
 	if (ptr == NULL) {
@@ -222,25 +235,28 @@ BOOL MulticastChatDlg::OnInitDialog()
 	}
 
 	IN_ADDR addr;
-
 	memcpy(&addr, *(ptr->h_addr_list), ptr->h_length);
 	m_MyHostIP = inet_ntoa(addr);
-
-
+	
+	// 아이디 생성
 	ID.Format("[%lld]", CTime::GetCurrentTime().GetTime());
 
+	// 입장 메세지 출력
 	CString joinMSG = "##############입장##############";
 	MySendTo(joinMSG);
 
 	return TRUE;
 }
 
+// 메세지 보내기 함수
 void MulticastChatDlg::MySendTo(CString str)
 {
+	// 현재 시간 설정
 	CString time;
 	cTime = CTime::GetCurrentTime();
 	time.Format("%02dh:%02dm:%02ds", cTime.GetHour(), cTime.GetMinute(), cTime.GetSecond());
 
+	// 메세지 구성
 	str = user.name + " : " + str + " (" + time + "||" + m_MyHostIP + ")" + ID;
 
 	retval = sendto(sock, str, str.GetLength(), 0,
@@ -264,9 +280,7 @@ void MulticastChatDlg::AddEventString(CString str)
 	CDC*       pDC = m_chatList.GetDC();
 	CFont*     pFont = m_chatList.GetFont();
 
-	// Select the listbox font, save the old font
 	CFont* pOldFont = pDC->SelectObject(pFont);
-	// Get the text metrics for avg char width
 	pDC->GetTextMetrics(&tm);
 
 	for (int i = 0; i < m_chatList.GetCount(); i++)
@@ -274,18 +288,15 @@ void MulticastChatDlg::AddEventString(CString str)
 		m_chatList.GetText(i, strTmp);
 		sz = pDC->GetTextExtent(strTmp);
 
-		// Add the avg width to prevent clipping
 		sz.cx += tm.tmAveCharWidth;
 
 		if (sz.cx > dx)
 			dx = sz.cx;
 	}
-	// Select the old font back into the DC
+
 	pDC->SelectObject(pOldFont);
 	m_chatList.ReleaseDC(pDC);
 
-	// Set the horizontal extent so every character of all strings 
-	// can be scrolled to.
 	m_chatList.SetHorizontalExtent(dx);
 }
 
